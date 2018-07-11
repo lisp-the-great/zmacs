@@ -1,0 +1,65 @@
+#!/bin/bash
+
+
+ZMACS=$0
+
+# command
+if [ -z ${1} ]; then
+    COMMAND=edit
+elif [ -e ${1} ]; then
+    COMMAND=edit
+    ARGS=${1}
+else
+    COMMAND=${1}
+fi
+
+# parse args
+if [[ ${2} = "-s" ]]; then
+    SESSION=${3}
+    ARGS="${ARGS:-${@:4}}"
+else
+    SESSION=default
+    ARGS="${ARGS:-${@:2}}"
+fi
+
+# do commands
+case $COMMAND in
+    help|-h|--help)
+        echo "zmacs command [options] [argumnets]"
+        echo "commands supported:"
+        echo "  help - show this message"
+        echo "  list - show running emacs daemons"
+        echo "  start|stop|restart [-s session]"
+        echo "  edit|view [-s session] [emacs argumnets]"
+        echo "use \"edit\" by default: when there is no \"command\" specified"
+        echo "   or the first arg is a existing path"
+    ;;
+    start)
+        emacs --daemon=${SESSION}
+        ;;
+    stop)
+        emacsclient -s ${SESSION} -e "(save-buffers-kill-emacs)"
+        ;;
+    kill)
+        emacsclient -s ${SESSION} -e "(kill-emacs)"
+        ;;
+    restart)
+        ${ZMACS} stop $@
+        ${ZMACS} start $@
+        ;;
+    list)
+        ps aux | grep -i emacs | grep daemon | awk -F12 '{ print $NF }'
+        ;;
+    edit)
+        emacsclient -c -n -s ${SESSION} ${ARGS}
+        ;;
+    view)
+        echo "with bug"
+        # emacsclient -c -n -s ${SESSION} -e "(setq buffer-read-only t)" ${ARGS}
+        ;;
+    *)
+        echo "** unknown command ${COMMAND}"
+        echo
+        ${ZMACS} help
+        ;;
+esac
